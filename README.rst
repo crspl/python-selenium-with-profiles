@@ -1,3 +1,27 @@
+================================
+ADDITIONAL INFO FOR THIS VERSION
+================================
+This repository contains improved version of Python Selenium 3.14.1 with extra parameter allowing to reuse existing Firefox profile. When using this parameter then provider profile folder will be used directly and not copied to extra location like normally Selenium does. All cache / cookies etc will be available for next session. Changes are made on this version of Selenium and not the newest for few reasons: mainly it's for my purposes and I'm using older Selenium for backward compatibility but also newer Selenium requires newer Python what doesn't work for mee too. But in _patch folder there's patch with important changes so anybody can apply this (maybe with some modifications) to newer code
+
+REQUIREMENTS:
+    - geckodriver 0.32.2
+    - Firefox 102.8
+
+These versions were tested and work fine. Could be some older / newer (more likely) combinations will work too but it was not tested. For sure older gecko / FF don't use MarionetteActivePort file what is necessary for this to work
+
+USAGE:
+    from selenium import webdriver
+    profile = webdriver.FirefoxProfile(profile_directory='/tmp/firefox-profile', reuse=True)
+    driver = webdriver.Firefox(firefox_profile=profile)
+    driver.get('https://www.google.com')
+    driver.quit()
+
+BEHAVIOUR:
+    - profile_directory = None - fresh profile will be created
+    - profile_directory set but folder doesn't exist - fresh profile will be created
+    - profile_directory set and exists but reuse == False - standard behaviour - profile will be copied to new location and Firefox will use this copy. In the end copied profile folder will be removed
+    - profile_directory set and exists and reuse == True - existing profile folder will be passed to Firefox and it will stay on disk after Firefox finishess
+
 ======================
 Selenium Client Driver
 ======================
