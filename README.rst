@@ -10,9 +10,11 @@ REQUIREMENTS:
 These versions were tested and work fine. Could be some older / newer (more likely) combinations will work too but it was not tested. For sure older gecko / FF don't use MarionetteActivePort file what is necessary for this to work
 
 USAGE:
+
 .. code-block:: python
 
     from selenium import webdriver
+
     profile = webdriver.FirefoxProfile(profile_directory='/tmp/firefox-profile', reuse=True)
     driver = webdriver.Firefox(firefox_profile=profile)
     driver.get('https://www.google.com')
