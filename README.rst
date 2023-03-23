@@ -11,11 +11,13 @@ These versions were tested and work fine. Could be some older / newer (more like
 
 USAGE:
 .. code-block:: python
+
     from selenium import webdriver
     profile = webdriver.FirefoxProfile(profile_directory='/tmp/firefox-profile', reuse=True)
     driver = webdriver.Firefox(firefox_profile=profile)
     driver.get('https://www.google.com')
     driver.quit()
+
 
 BEHAVIOUR:
     - profile_directory = None - fresh profile will be created
