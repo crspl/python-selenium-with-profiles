@@ -1,0 +1,104 @@
+From 0bc560c0549b3ce2a2dd4239945d60332ac44edb Mon Sep 17 00:00:00 2001
+From: crspl <chris@analyticsseo.com>
+Date: Thu, 23 Mar 2023 20:24:47 +0100
+Subject: [PATCH] support for reusing profiles
+
+---
+ selenium/webdriver/firefox/firefox_profile.py | 16 +++++++-----
+ selenium/webdriver/firefox/webdriver.py       | 26 ++++++++++++++-----
+ 2 files changed, 30 insertions(+), 12 deletions(-)
+
+diff --git a/selenium/webdriver/firefox/firefox_profile.py b/selenium/webdriver/firefox/firefox_profile.py
+index d987a64..5c2c285 100644
+--- a/selenium/webdriver/firefox/firefox_profile.py
++++ b/selenium/webdriver/firefox/firefox_profile.py
+@@ -50,7 +50,7 @@ class FirefoxProfile(object):
+     ANONYMOUS_PROFILE_NAME = "WEBDRIVER_ANONYMOUS_PROFILE"
+     DEFAULT_PREFERENCES = None
+ 
+-    def __init__(self, profile_directory=None):
++    def __init__(self, profile_directory=None, reuse=False):
+         """
+         Initialises a new instance of a Firefox Profile
+ 
+@@ -68,15 +68,19 @@ class FirefoxProfile(object):
+             FirefoxProfile.DEFAULT_PREFERENCES['mutable'])
+         self.native_events_enabled = True
+         self.profile_dir = profile_directory
++        self.reuse = reuse
+         self.tempfolder = None
+         if self.profile_dir is None:
+             self.profile_dir = self._create_tempfolder()
++        elif not os.path.isdir(self.profile_dir):
++            os.mkdir(self.profile_dir)
+         else:
+-            self.tempfolder = tempfile.mkdtemp()
+-            newprof = os.path.join(self.tempfolder, "webdriver-py-profilecopy")
+-            shutil.copytree(self.profile_dir, newprof,
+-                            ignore=shutil.ignore_patterns("parent.lock", "lock", ".parentlock"))
+-            self.profile_dir = newprof
++            if not self.reuse:
++                self.tempfolder = tempfile.mkdtemp()
++                newprof = os.path.join(self.tempfolder, "webdriver-py-profilecopy")
++                shutil.copytree(self.profile_dir, newprof,
++                                ignore=shutil.ignore_patterns("parent.lock", "lock", ".parentlock"))
++                self.profile_dir = newprof
+             os.chmod(self.profile_dir, 0o755)
+             self._read_existing_userjs(os.path.join(self.profile_dir, "user.js"))
+         self.extensionsDir = os.path.join(self.profile_dir, "extensions")
+diff --git a/selenium/webdriver/firefox/webdriver.py b/selenium/webdriver/firefox/webdriver.py
+index 1c4973a..08fd097 100644
+--- a/selenium/webdriver/firefox/webdriver.py
++++ b/selenium/webdriver/firefox/webdriver.py
+@@ -23,6 +23,7 @@ except NameError:  # Python 3.x
+ 
+ import shutil
+ import sys
++import os
+ from contextlib import contextmanager
+ 
+ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+@@ -163,7 +164,14 @@ class WebDriver(RemoteWebDriver):
+                 log_path=service_log_path)
+             self.service.start()
+ 
++            if self.profile.reuse:
++                options.add_argument('--profile')
++                options.add_argument(self.profile.profile_dir)
++                options.set_preference('profile', self.profile.profile_dir)
++
+             capabilities.update(options.to_capabilities())
++            if self.profile.reuse:
++                del(capabilities['moz:firefoxOptions']['profile'])
+ 
+             executor = FirefoxRemoteConnection(
+                 remote_server_addr=self.service.service_url)
+@@ -210,13 +218,19 @@ class WebDriver(RemoteWebDriver):
+         else:
+             self.binary.kill()
+ 
+-        if self.profile is not None:
++        if self.profile.reuse:
+             try:
+-                shutil.rmtree(self.profile.path)
+-                if self.profile.tempfolder is not None:
+-                    shutil.rmtree(self.profile.tempfolder)
+-            except Exception as e:
+-                print(str(e))
++                os.remove(self.profile.path + '/lock')
++            except:
++                pass
++        else:
++            if self.profile is not None:
++                try:
++                    shutil.rmtree(self.profile.path)
++                    if self.profile.tempfolder is not None:
++                        shutil.rmtree(self.profile.tempfolder)
++                except Exception as e:
++                    print(str(e))
+ 
+     @property
+     def firefox_profile(self):
+-- 
+2.25.1
+
