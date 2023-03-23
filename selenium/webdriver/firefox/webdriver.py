@@ -23,6 +23,7 @@ except NameError:  # Python 3.x
 
 import shutil
 import sys
+import os
 from contextlib import contextmanager
 
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -163,7 +164,14 @@ class WebDriver(RemoteWebDriver):
                 log_path=service_log_path)
             self.service.start()
 
+            if self.profile.reuse:
+                options.add_argument('--profile')
+                options.add_argument(self.profile.profile_dir)
+                options.set_preference('profile', self.profile.profile_dir)
+
             capabilities.update(options.to_capabilities())
+            if self.profile.reuse:
+                del(capabilities['moz:firefoxOptions']['profile'])
 
             executor = FirefoxRemoteConnection(
                 remote_server_addr=self.service.service_url)
@@ -210,13 +218,19 @@ class WebDriver(RemoteWebDriver):
         else:
             self.binary.kill()
 
-        if self.profile is not None:
+        if self.profile.reuse:
             try:
-                shutil.rmtree(self.profile.path)
-                if self.profile.tempfolder is not None:
-                    shutil.rmtree(self.profile.tempfolder)
-            except Exception as e:
-                print(str(e))
+                os.remove(self.profile.path + '/lock')
+            except:
+                pass
+        else:
+            if self.profile is not None:
+                try:
+                    shutil.rmtree(self.profile.path)
+                    if self.profile.tempfolder is not None:
+                        shutil.rmtree(self.profile.tempfolder)
+                except Exception as e:
+                    print(str(e))
 
     @property
     def firefox_profile(self):

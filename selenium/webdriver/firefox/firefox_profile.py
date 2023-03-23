@@ -50,7 +50,7 @@ class FirefoxProfile(object):
     ANONYMOUS_PROFILE_NAME = "WEBDRIVER_ANONYMOUS_PROFILE"
     DEFAULT_PREFERENCES = None
 
-    def __init__(self, profile_directory=None):
+    def __init__(self, profile_directory=None, reuse=False):
         """
         Initialises a new instance of a Firefox Profile
 
@@ -68,15 +68,19 @@ class FirefoxProfile(object):
             FirefoxProfile.DEFAULT_PREFERENCES['mutable'])
         self.native_events_enabled = True
         self.profile_dir = profile_directory
+        self.reuse = reuse
         self.tempfolder = None
         if self.profile_dir is None:
             self.profile_dir = self._create_tempfolder()
+        elif not os.path.isdir(self.profile_dir):
+            os.mkdir(self.profile_dir)
         else:
-            self.tempfolder = tempfile.mkdtemp()
-            newprof = os.path.join(self.tempfolder, "webdriver-py-profilecopy")
-            shutil.copytree(self.profile_dir, newprof,
-                            ignore=shutil.ignore_patterns("parent.lock", "lock", ".parentlock"))
-            self.profile_dir = newprof
+            if not self.reuse:
+                self.tempfolder = tempfile.mkdtemp()
+                newprof = os.path.join(self.tempfolder, "webdriver-py-profilecopy")
+                shutil.copytree(self.profile_dir, newprof,
+                                ignore=shutil.ignore_patterns("parent.lock", "lock", ".parentlock"))
+                self.profile_dir = newprof
             os.chmod(self.profile_dir, 0o755)
             self._read_existing_userjs(os.path.join(self.profile_dir, "user.js"))
         self.extensionsDir = os.path.join(self.profile_dir, "extensions")
