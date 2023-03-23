@@ -1,3 +1,6 @@
+Selenium 3.14.1.1
+* added param 'reuse' for profile
+
 Selenium 3.14.1
 * Fix ability to set timeout for urllib3 (#6286)
 * get_cookie uses w3c endpoint when compliant
